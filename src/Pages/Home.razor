@@ -1,0 +1,175 @@
+@page "/"
+@implements IAsyncDisposable
+@using Tunnelite.BrowserHost.Game
+@using Tunnelite.BrowserHost.Tunnel
+
+<PageTitle>Browser tunnel host</PageTitle>
+
+<h1>This tab is the web server</h1>
+<p class="lede">
+    A WebAssembly app with no socket, no listener and no port, answering HTTP requests that arrive
+    over a SignalR tunnel. It serves a tic-tac-toe table and referees the game.
+</p>
+
+<section class="panel">
+    <label>
+        Tunnel server
+        <input @bind="_publicUrl" disabled="@(_client is not null)" />
+    </label>
+    @if (_client is null)
+    {
+        <button class="primary" @onclick="StartAsync" disabled="@_starting">
+            @(_starting ? "opening…" : "Open the tunnel")
+        </button>
+    }
+    else
+    {
+        <button @onclick="StopAsync">Close</button>
+    }
+</section>
+
+@if (_error is not null)
+{
+    <p class="error">@_error</p>
+}
+
+@if (_client?.TunnelUrl is { } url)
+{
+    <section class="panel address">
+        <span>Serving at</span>
+        <a href="@url" target="_blank" rel="noopener">@url</a>
+        <small>open it in another browser to play</small>
+    </section>
+}
+
+<h2>Referee</h2>
+<div class="referee">
+    <div class="board">
+        @for (var i = 0; i < 9; i++)
+        {
+            <div class="cell">@(_snapshot.Board[i] == '-' ? "" : _snapshot.Board[i].ToString())</div>
+        }
+    </div>
+    <dl>
+        <dt>Seats taken</dt>
+        <dd>@(_snapshot.Seats.Count == 0 ? "nobody yet" : string.Join(" and ", _snapshot.Seats))</dd>
+        <dt>Position</dt>
+        <dd>
+            @if (_snapshot.Winner is { } winner)
+            {
+                <b>@winner wins</b>
+            }
+            else if (_snapshot.Draw)
+            {
+                <b>a draw</b>
+            }
+            else
+            {
+                @(_snapshot.Turn) <text> to play</text>
+            }
+        </dd>
+        <dt>Moves judged</dt>
+        <dd>@_snapshot.Version</dd>
+    </dl>
+    <button @onclick="() => _game.Reset()">New game</button>
+</div>
+
+<h2>Requests served <small>@_served total, @_polls of them state polls</small></h2>
+<ul class="log">
+    @foreach (var line in _log)
+    {
+        <li>@line</li>
+    }
+</ul>
+
+@code {
+    private readonly TicTacToeApp _game = new();
+    private readonly List<string> _log = [];
+    private string _publicUrl = "http://localhost:5199";
+    private BrowserTunnelClient? _client;
+    private GameSnapshot _snapshot = new();
+    private bool _starting;
+    private string? _error;
+    private int _served;
+    private int _polls;
+
+    // The players poll /state twice a second each, which would bury everything else in the log.
+    private void OnServed(string method, string path, int status)
+    {
+        _served++;
+
+        if (path.StartsWith("/state", StringComparison.Ordinal))
+        {
+            _polls++;
+            InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        Append($"{method} {path} -> {status}");
+    }
+
+    protected override void OnInitialized()
+    {
+        _snapshot = _game.Snapshot();
+        _game.Changed += OnGameChanged;
+    }
+
+    private void OnGameChanged()
+    {
+        _snapshot = _game.Snapshot();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task StartAsync()
+    {
+        _starting = true;
+        _error = null;
+
+        var client = new BrowserTunnelClient(_publicUrl, _game);
+        client.Log += Append;
+        client.Served += OnServed;
+        client.StateChanged += () => InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await client.StartAsync();
+            _client = client;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            await client.DisposeAsync();
+        }
+        finally
+        {
+            _starting = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_client is not null)
+        {
+            await _client.DisposeAsync();
+            _client = null;
+        }
+    }
+
+    private void Append(string line)
+    {
+        _log.Insert(0, $"{DateTime.Now:HH:mm:ss}  {line}");
+
+        if (_log.Count > 40)
+        {
+            _log.RemoveRange(40, _log.Count - 40);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _game.Changed -= OnGameChanged;
+        await StopAsync();
+    }
+}

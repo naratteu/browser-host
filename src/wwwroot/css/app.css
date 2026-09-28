@@ -1,0 +1,136 @@
+:root {
+    color-scheme: light dark;
+    --ink: #1d1d1f;
+    --bg: #faf9f7;
+    --muted: #6b6b70;
+    --line: #8883;
+    --accent: #b4532a;
+    --panel: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root { --ink: #e9e7e4; --bg: #15161a; --muted: #9a9aa0; --accent: #e0855a; --panel: #1e1f24; }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+h1 { font-size: 1.5rem; font-weight: 660; letter-spacing: -.02em; margin: 0 0 .4rem; }
+h2 { font-size: .95rem; font-weight: 650; margin: 2.4rem 0 .7rem; }
+h2 small { font-weight: 400; color: var(--muted); }
+.lede { margin: 0 0 2rem; color: var(--muted); max-width: 40rem; }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .9rem;
+    align-items: end;
+}
+
+label { display: flex; flex-direction: column; gap: .3rem; font-size: .78rem; color: var(--muted); flex: 1 1 16rem; }
+
+input {
+    font: inherit;
+    padding: .5rem .6rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    width: 100%;
+}
+
+button {
+    font: inherit;
+    font-weight: 550;
+    padding: .52rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .55; cursor: default; }
+
+.address { margin-top: .8rem; align-items: baseline; gap: .55rem; }
+.address span { color: var(--muted); font-size: .8rem; }
+.address a { color: var(--accent); font-weight: 600; text-decoration: none; word-break: break-all; }
+.address small { color: var(--muted); }
+
+.error { color: var(--accent); font-size: .85rem; }
+
+.referee {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.6rem;
+    align-items: start;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.1rem;
+}
+
+.board { display: grid; grid-template-columns: repeat(3, 3rem); gap: 5px; }
+
+.cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+}
+
+dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: .2rem 1rem; align-content: start; font-size: .85rem; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+
+.log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font: 12.5px/1.75 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+    max-height: 17rem;
+    overflow-y: auto;
+    border-left: 2px solid var(--line);
+    padding-left: .85rem;
+}
+
+.log li { white-space: pre-wrap; word-break: break-all; }
+
+/* Blazor's own chrome: the template ships these in the stylesheet it generates. */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: .7rem 1.25rem;
+    background: #b4532a;
+    color: #fff;
+    font-size: .85rem;
+    box-shadow: 0 -2px 12px #0003;
+}
+
+#blazor-error-ui .dismiss { cursor: pointer; float: right; }
+#blazor-error-ui .reload { color: #fff; }
+
+.loading-progress { display: block; margin: 6rem auto 0; width: 6rem; height: 6rem; }
+.loading-progress circle { fill: none; stroke: var(--line); stroke-width: .5rem; transform-origin: 50% 50%; transform: rotate(-90deg); }
+.loading-progress circle:last-child { stroke: var(--accent); stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * .8) 500%; transition: stroke-dasharray .1s; }
+.loading-progress-text { text-align: center; color: var(--muted); font-size: .8rem; margin-top: .6rem; }
+.loading-progress-text:after { content: var(--blazor-load-percentage-text, "loading…"); }
