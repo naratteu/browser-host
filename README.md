@@ -43,9 +43,14 @@ A page served from one origin drives a tunnel server on another, so the server n
 `Access-Control-Expose-Headers` — the client reads the tunneled request's own headers off the
 response and their names are not known ahead of time.
 
-tunnelite.com does not send those today
-([cristipufu/tunnelite#25](https://github.com/cristipufu/tunnelite/issues/25)), so this currently
-runs against a self-hosted server with a policy like:
+tunnelite.com does not, and won't: allowing any origin would let any web page turn its visitors into
+anonymous tunnel hosts, and every tunnel there shares one domain's reputation, so one abuse wave
+could get the whole domain blocklisted
+([cristipufu/tunnelite#25](https://github.com/cristipufu/tunnelite/issues/25)). Fair call for a free,
+anonymous service.
+
+So this runs against a relay you host yourself, where you are the only tenant and that reasoning
+doesn't apply. The policy:
 
 ```csharp
 builder.Services.AddCors(options => options.AddPolicy("browser-tunnel-client", policy => policy
