@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This tab is a server</title>
+<style>
+  :root { color-scheme: light dark; --ink:#1d1d1f; --bg:#faf9f7; --muted:#6b6b70; --line:#8883; --accent:#b4532a; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e9e7e4; --bg:#15161a; --muted:#9a9aa0; --accent:#e0855a; --card:#1e1f24; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 ui-sans-serif,system-ui,-apple-system,sans-serif; }
+  main { max-width:46rem; margin:0 auto; padding:2.5rem 1.25rem 4rem; }
+  h1 { font-size:1.45rem; letter-spacing:-.02em; margin:0 0 .35rem; }
+  .lede { color:var(--muted); margin:0 0 1.75rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem 1.1rem; margin-bottom:1rem; }
+  .label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  #url { font-weight:650; color:var(--accent); word-break:break-all; font-size:1.02rem; }
+  #url a { color:inherit; }
+  .row { display:flex; gap:1rem; flex-wrap:wrap; }
+  .row .card { flex:1 1 12rem; }
+  #count { font-size:2.4rem; font-weight:750; line-height:1.1; }
+  ul { list-style:none; margin:.5rem 0 0; padding:0 0 0 .8rem; border-left:2px solid var(--line);
+       font:12.5px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted); max-height:18rem; overflow-y:auto; }
+  li.visit { color:var(--ink); }
+  li.bad { color:#c0392b; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>This tab is a server</h1>
+  <p class="lede">
+    The <a href="https://github.com/gosuda/portal-tunnel">Portal</a> connector, compiled to
+    WebAssembly, registers this tab on a relay under a random name. Anyone who opens the address
+    below is answered by this tab, with hello world and a running count.
+  </p>
+
+  <div class="card">
+    <div class="label">Public URL</div>
+    <div id="url">connecting…</div>
+  </div>
+
+  <div class="row">
+    <div class="card"><div class="label">Visits answered</div><div id="count">0</div></div>
+    <div class="card"><div class="label">Relay</div><div id="relay">—</div><div class="label" style="margin-top:.5rem">Name</div><code id="name">—</code></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Log</div>
+    <ul id="log"></ul>
+  </div>
+</main>
+<script src="wasm_exec.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
