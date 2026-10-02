@@ -30,7 +30,7 @@ tab, with no more privilege than theirs — it just happens to hold the rules.
 ## Running it
 
 ```bash
-dotnet run --project src        # http://localhost:5400
+dotnet run --project tunnelite/src        # http://localhost:5400
 ```
 
 Open it, point it at a tunnel server, press **Open the tunnel**, then open the address it shows in
