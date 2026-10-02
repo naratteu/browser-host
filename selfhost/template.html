@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>스스로를 서브하는 페이지</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#f4f5f3; --surface:#fff; --ink:#191f1d; --muted:#616b67; --line:#d7dcd9;
+    --accent:#0c7f6f; --accent-ink:#fff; --code:#eceff0; --font:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#10110f; --surface:#191b18; --ink:#e6e9e6; --muted:#9aa29d; --line:#2a2e2a;
+    --accent:#3fc9b5; --accent-ink:#06211d; --code:#0c0e0c;
+  } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 var(--font);
+         min-height:100dvh; display:flex; align-items:flex-start; justify-content:center; padding:clamp(16px,4vw,48px); }
+  main { width:100%; max-width:40rem; display:grid; gap:1.3rem; }
+  .eyebrow { font:600 .72rem/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  h1 { font-size:clamp(1.6rem,5vw,2.2rem); line-height:1.25; margin:.3rem 0 0; letter-spacing:-.01em; text-wrap:balance; }
+  p { margin:0; color:var(--muted); }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:1.1rem 1.2rem; display:grid; gap:.5rem; }
+  .label { font:600 .68rem/1 var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+  #stage { font-weight:600; }
+  #url a { color:var(--accent); font:600 1rem/1.4 var(--mono); word-break:break-all; }
+  .big { font-size:2.6rem; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; }
+  .chain { display:grid; gap:.55rem; }
+  .chain .step { display:flex; gap:.6rem; align-items:baseline; }
+  .chain .n { font:700 .8rem var(--mono); color:var(--accent-ink); background:var(--accent); border-radius:999px;
+              min-width:1.5rem; height:1.5rem; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .chain .t { color:var(--ink); }
+  ul#log { list-style:none; margin:0; padding:0; font:12.5px/1.7 var(--mono); color:var(--muted);
+           border-left:2px solid var(--line); padding-left:.8rem; max-height:16rem; overflow-y:auto; }
+  #log li.hit { color:var(--ink); }
+  #log li.bad { color:#d4573d; }
+  button { font:600 .85rem var(--font); color:var(--accent-ink); background:var(--accent); border:none;
+           border-radius:8px; padding:.5rem .9rem; cursor:pointer; justify-self:start; }
+  button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--code); padding:.08em .35em; border-radius:4px; }
+  footer { color:var(--muted); font-size:.82rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">portal-tunnel · self-hosting quine</div>
+    <h1>이 페이지는 스스로를 서브합니다</h1>
+    <p>이 탭이 포탈 릴레이에 붙어, 아래 공개 주소로 <strong>자기 자신의 파일</strong>을 내보냅니다.</p>
+  </header>
+
+  <div class="card">
+    <div class="label">상태</div>
+    <div id="stage">WebAssembly 불러오는 중…</div>
+  </div>
+
+  <div class="card">
+    <div class="label">이 탭의 공개 주소</div>
+    <div id="url">아직 없음</div>
+  </div>
+
+  <div class="card chain">
+    <div class="label">연쇄가 이렇게 이어집니다</div>
+    <div class="step"><span class="n">1</span><span class="t">이 탭이 릴레이에 붙어 공개 주소를 받습니다.</span></div>
+    <div class="step"><span class="n">2</span><span class="t">누군가 그 주소를 열면, 이 탭이 <strong>같은 페이지</strong>를 돌려줍니다.</span></div>
+    <div class="step"><span class="n">3</span><span class="t">그 사람의 탭도 똑같이 릴레이에 붙어, 자기만의 주소로 자신을 서브합니다.</span></div>
+    <div class="step"><span class="n">4</span><span class="t">탭을 닫으면 그 주소는 사라집니다. 열려 있는 동안만 이어집니다.</span></div>
+  </div>
+
+  <div class="card">
+    <div class="label">이 탭이 돌려준 방문 수</div>
+    <div class="big" id="count">0</div>
+  </div>
+
+  <div class="card">
+    <div class="label">기록</div>
+    <ul id="log"></ul>
+  </div>
+
+  <button id="copy" hidden type="button">공개 주소 복사</button>
+  <footer>
+    탭을 닫으면 멈춥니다. 소스: <a href="https://github.com/gosuda/portal-tunnel">portal-tunnel</a> ·
+    데모: <a href="https://github.com/naratteu/browser-host">browser-host</a>
+  </footer>
+</main>
+
+<script>/*__WASM_EXEC__*/</script>
+<script id="wasmgz" type="application/octet-stream">__WASM_GZ_B64__</script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const REGISTRY = "https://raw.githubusercontent.com/gosuda/portal-tunnel/main/registry.json";
+const LOCAL = ["https://localhost"];
+let count = 0, publicURL = "";
+
+// The exact bytes this tab serves to every visitor: its own live document.
+const SELF_SOURCE = "<!doctype html>\n" + document.documentElement.outerHTML;
+window.selfSource = () => SELF_SOURCE;
+
+function log(text, kind="") {
+  const li = document.createElement("li");
+  li.className = kind;
+  li.textContent = `${new Date().toLocaleTimeString()}  ${text}`;
+  $("log").prepend(li);
+}
+function stage(text) { $("stage").textContent = text; }
+
+window.onVisit = (n, path) => {
+  count = Number(n);
+  $("count").textContent = count;
+  log(`#${count} ${path} 에 자신을 돌려줌`, "hit");
+};
+
+async function wasmBytes() {
+  const b64 = $("wasmgz").textContent.trim();
+  const gz = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const stream = new Response(gz).body.pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).arrayBuffer();
+}
+
+async function fetchWithin(url, ms) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, { signal: c.signal }); } finally { clearTimeout(t); }
+}
+// A relay that can host a browser serves its public certificate chain.
+async function hostsBrowsers(relay) {
+  try {
+    const r = await fetchWithin(`${relay}/sdk/certificate-chain`, 5000);
+    return r.ok && (await r.text()).startsWith("-----BEGIN CERTIFICATE-----");
+  } catch { return false; }
+}
+async function candidates() {
+  const asked = new URLSearchParams(location.search).getAll("relay");
+  if (asked.length) return asked;
+  let listed = [];
+  try { listed = (await (await fetchWithin(REGISTRY, 5000)).json()).relays; }
+  catch { log("registry.json 을 읽지 못함", "bad"); }
+  return [...LOCAL, ...listed];
+}
+
+function start(relay, name) {
+  return new Promise((resolve, reject) => {
+    window.portalSelfHost(relay, name,
+      (url) => resolve(url),
+      (err) => reject(new Error(err)));
+  });
+}
+
+async function main() {
+  stage("WebAssembly 준비 중…");
+  const go = new Go();
+  const { instance } = await WebAssembly.instantiate(await wasmBytes(), go.importObject);
+  go.run(instance);
+
+  const name = (crypto.randomUUID && crypto.randomUUID()) || ("tab-" + Math.random().toString(36).slice(2));
+  for (const raw of await candidates()) {
+    const relay = raw.replace(/\/+$/, "");
+    stage(`${relay} 확인 중…`);
+    if (!(await hostsBrowsers(relay))) { log(`${relay}: 브라우저 호스팅 미지원, 건너뜀`); continue; }
+    log(`${relay}: ${name} 등록 시도`);
+    try {
+      publicURL = await start(relay, name);
+      window.portalPublicURL = publicURL;
+      stage("서빙 중 — 이 탭이 서버입니다");
+      $("url").innerHTML = "";
+      const a = Object.assign(document.createElement("a"), { href: publicURL, target: "_blank", textContent: publicURL });
+      $("url").append(a);
+      $("copy").hidden = false;
+      log(`${relay}: ${publicURL} 서빙 시작`, "hit");
+      return;
+    } catch (e) { log(`${relay}: ${e.message}`, "bad"); }
+  }
+  stage("이 탭을 호스팅할 릴레이를 찾지 못함");
+  log("호스팅 가능한 릴레이 없음", "bad");
+}
+
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(publicURL); $("copy").textContent = "복사됨"; }
+  catch { $("copy").textContent = "복사 실패"; }
+  setTimeout(() => ($("copy").textContent = "공개 주소 복사"), 1500);
+});
+
+main().catch((e) => { stage("시작 실패"); log(String(e), "bad"); });
+</script>
+</body>
+</html>
