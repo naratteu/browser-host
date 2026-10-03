@@ -7,7 +7,9 @@ state** over a [Portal](https://github.com/gosuda/portal-tunnel) relay. Open the
 
 Visitors get FeatherWiki's own **published** (read-only) form: no Save, New Page, or Wiki Settings. So
 the wiki does not fork at every hop — the owner's tab, which holds the editable file, is the only place
-it changes. A read-only copy can host again to pass the wiki on. Published mode is FeatherWiki's own
+it changes. A read-only copy can host again to pass the wiki on, and it **follows the tab it came
+from live**: it polls that tab every few seconds and re-renders in place when the wiki changed, so it
+keeps hosting while it catches up, and the copies it serves catch up in turn. Published mode is FeatherWiki's own
 convention, not a lock: a reader can still unset it in the settings page, as with any published
 FeatherWiki.
 
@@ -38,8 +40,12 @@ Portal's [`registry.json`](https://github.com/gosuda/portal-tunnel/blob/main/reg
 
 How it serves current state: `host.js` sets the connector's handler to return
 `FW.gen(...)` — FeatherWiki's own "download in current state" serializer — with `published` set and the
-two scripts re-appended, so every served copy is up to date, read-only, and hostable. A copy is a
-snapshot of the moment it was loaded; reload it to catch up.
+two scripts re-appended, so every served copy is up to date, read-only, and hostable. At `/__state`
+the same handler returns just the wiki's pages as JSON; a read-only copy polls its source's
+`/__state` every 3 seconds and, on a change, swaps the state in and re-renders the way FeatherWiki's
+own "load from file" does. The chain keeps going while tabs stay open; if the source tab closes, its
+copies keep the last state they had. Changes to the wiki's custom CSS or JavaScript still need a
+reload.
 
 ## License
 
