@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: [portal/**, .github/workflows/pages.yml]
+    paths: [portal/**, wiki/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -29,6 +29,10 @@ jobs:
         run: |
           GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o web/portal.wasm .
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
+      - name: Build the wiki serve connector
+        working-directory: wiki/serve
+        run: |
+          GOOS=js GOARCH=wasm go build -buildvcs=false -trimpath -ldflags "-s -w" -o ../../portal/web/portal-serve.wasm .
       - uses: actions/upload-pages-artifact@v3
         with:
           path: portal/web
