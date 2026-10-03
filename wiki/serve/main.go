@@ -36,6 +36,13 @@ func main() {
 					http.NotFound(w, r)
 					return
 				}
+				// FeatherWiki probes its origin with OPTIONS to see whether it can save back
+				// (WebDAV). Answer without a body and without counting it as a visit; with no
+				// DAV header, the page keeps saving by download.
+				if r.Method == http.MethodOptions {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
 				n := visits.Add(1)
 				js.Global().Call("__portalVisit", n, r.URL.Path)
 				body := js.Global().Call("__portalServe", r.URL.Path)
