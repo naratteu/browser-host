@@ -29,22 +29,75 @@
     return idx >= 0 ? stripped.slice(0, idx) + block + "\n" + stripped.slice(idx) : stripped + block;
   }
 
-  var visits = 0, publicURL = "";
-  var ui = document.createElement("div");
-  ui.setAttribute("style",
-    "position:fixed;right:12px;bottom:12px;z-index:2147483647;width:19rem;max-width:calc(100vw - 24px);"
-    + "font:13px/1.5 ui-sans-serif,system-ui,sans-serif;background:#1a201e;color:#e4e9e7;"
-    + "border:1px solid #2c3532;border-radius:10px;padding:12px;box-shadow:0 6px 24px #0007");
-  ui.innerHTML =
-    '<div style="font-weight:700;margin-bottom:6px">이 위키를 호스팅</div>'
+  // --- UI: a small draggable icon that opens a compact panel. Position is remembered. ---
+  var POS_KEY = "portal-host-pos";
+  function loadPos() { try { return JSON.parse(localStorage.getItem(POS_KEY)); } catch (e) { return null; } }
+  function savePos(p) { try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (e) {} }
+
+  var root = document.createElement("div");
+  root.setAttribute("style", "position:fixed;z-index:2147483647;font:13px/1.45 ui-sans-serif,system-ui,sans-serif;touch-action:none");
+  var ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+    + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/>'
+    + '<path d="M16.24 7.76a6 6 0 0 1 0 8.48M7.76 16.24a6 6 0 0 1 0-8.48M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>';
+  root.innerHTML =
+    '<button id=ph-icon type=button title="포탈로 공유" aria-label="포탈로 공유" style="width:40px;height:40px;border-radius:50%;'
+    + 'border:1px solid #2c3532;background:#1a201e;color:#3fc9b5;cursor:grab;display:flex;align-items:center;justify-content:center;'
+    + 'box-shadow:0 3px 12px #0006;position:relative;padding:0">' + ICON
+    + '<span id=ph-dot hidden style="position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:#3fc9b5;'
+    + 'box-shadow:0 0 0 2px #1a201e"></span></button>'
+    + '<div id=ph-panel hidden style="position:absolute;width:17rem;max-width:calc(100vw - 24px);background:#1a201e;color:#e4e9e7;'
+    + 'border:1px solid #2c3532;border-radius:10px;padding:11px;box-shadow:0 6px 24px #0007">'
+    + '<div style="font-weight:700;margin-bottom:5px">포탈로 공유</div>'
     + '<div id=ph-stage style="color:#9aa29d;margin-bottom:8px">탭이 열려 있는 동안, 접속하는 사람에게 이 위키의 현재 상태를 돌려줍니다.</div>'
-    + '<button id=ph-go style="font:600 13px ui-sans-serif,system-ui;color:#06211d;background:#3fc9b5;border:0;border-radius:7px;padding:6px 12px;cursor:pointer">호스팅 시작</button>'
+    + '<button id=ph-go type=button style="font:600 13px ui-sans-serif,system-ui;color:#06211d;background:#3fc9b5;border:0;'
+    + 'border-radius:7px;padding:6px 12px;cursor:pointer">호스팅 시작</button>'
     + '<div id=ph-url style="margin-top:8px;word-break:break-all"></div>'
-    + '<div id=ph-count style="margin-top:6px;color:#9aa29d"></div>';
-  document.documentElement.appendChild(ui);
+    + '<div id=ph-count style="margin-top:4px;color:#9aa29d"></div></div>';
+  document.documentElement.appendChild(root);
   var $ = function (id) { return document.getElementById(id); };
+  var icon = $("ph-icon"), panel = $("ph-panel");
+
+  function clamp(p) {
+    var w = innerWidth, h = innerHeight;
+    return { x: Math.max(4, Math.min(p.x, w - 44)), y: Math.max(4, Math.min(p.y, h - 44)) };
+  }
+  function place(p) {
+    p = clamp(p); root.style.left = p.x + "px"; root.style.top = p.y + "px"; root.style.right = root.style.bottom = "auto";
+    // Open the panel toward the side of the screen with more room.
+    panel.style.right = p.x > innerWidth / 2 ? "0" : "auto";
+    panel.style.left = p.x > innerWidth / 2 ? "auto" : "0";
+    panel.style.bottom = p.y > innerHeight / 2 ? "48px" : "auto";
+    panel.style.top = p.y > innerHeight / 2 ? "auto" : "48px";
+    return p;
+  }
+  var pos = place(loadPos() || { x: innerWidth - 56, y: innerHeight - 104 });  // clear of FeatherWiki's footer link
+  addEventListener("resize", function () { pos = place(pos); });
+
+  // Drag the icon to move; a press without movement toggles the panel.
+  var drag = null;
+  icon.addEventListener("pointerdown", function (e) {
+    drag = { sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, moved: false };
+    icon.setPointerCapture(e.pointerId); icon.style.cursor = "grabbing";
+  });
+  icon.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+    drag.moved = true; pos = place({ x: drag.ox + dx, y: drag.oy + dy });
+  });
+  icon.addEventListener("pointerup", function () {
+    if (!drag) return;
+    icon.style.cursor = "grab";
+    if (drag.moved) savePos(pos); else panel.hidden = !panel.hidden;
+    drag = null;
+  });
+  icon.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); panel.hidden = !panel.hidden; }
+  });
   function stage(t) { $("ph-stage").textContent = t; }
 
+  // --- Serving ---
+  var visits = 0, publicURL = "";
   window.__portalServe = function () { return bundle(window.FW.gen(window.FW.state)); };
   window.__portalVisit = function (n) {
     visits = Number(n);
@@ -96,6 +149,8 @@
         });
         window.portalPublicURL = publicURL;
         stage("호스팅 중 — 이 탭이 서버입니다");
+        $("ph-go").hidden = true;
+        $("ph-dot").hidden = false;
         $("ph-url").innerHTML = '<a href="' + publicURL + '" target=_blank style="color:#3fc9b5;font-weight:600">' + publicURL + "</a>";
         $("ph-count").textContent = "돌려준 방문: 0";
         return;
