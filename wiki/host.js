@@ -4,7 +4,9 @@
 // This script, appended to it, lets the tab serve its own current state over a Portal relay
 // (https://github.com/gosuda/portal-tunnel). Visitors get the wiki as it stands now in
 // FeatherWiki's own published (read-only) form, so editing stays with the owner; a read-only copy
-// can host again to pass it on. The connector wasm is fetched at runtime, so the file stays small.
+// can host again to pass it on, and follows the tab it came from live: it polls that tab's
+// /__state and re-renders in place, so the chain keeps up without reloading. The connector wasm
+// is fetched at runtime, so the file stays small.
 //
 // This combined work is AGPL-3.0. Source: https://github.com/naratteu/browser-host (wiki/).
 (function () {
@@ -52,7 +54,8 @@
     + '<button id=ph-go type=button style="font:600 13px ui-sans-serif,system-ui;color:#06211d;background:#3fc9b5;border:0;'
     + 'border-radius:7px;padding:6px 12px;cursor:pointer">호스팅 시작</button>'
     + '<div id=ph-url style="margin-top:8px;word-break:break-all"></div>'
-    + '<div id=ph-count style="margin-top:4px;color:#9aa29d"></div></div>';
+    + '<div id=ph-count style="margin-top:4px;color:#9aa29d"></div>'
+    + '<div id=ph-follow style="margin-top:4px;color:#9aa29d"></div></div>';
   document.documentElement.appendChild(root);
   var $ = function (id) { return document.getElementById(id); };
   var icon = $("ph-icon"), panel = $("ph-panel");
@@ -97,7 +100,7 @@
   function stage(t) { $("ph-stage").textContent = t; }
   window.FW.ready(function () {
     stage(window.FW.state.p.published
-      ? "받은 읽기전용 위키를, 탭이 열려 있는 동안 다시 배포합니다."
+      ? "받은 읽기전용 위키입니다. 원본을 따라가며, 원하면 이 탭에서 다시 배포할 수 있습니다."
       : "탭이 열려 있는 동안, 접속하는 사람에게 이 위키의 현재 상태를 읽기전용으로 돌려줍니다. 편집은 이 탭에서만 합니다.");
   });
 
@@ -109,11 +112,51 @@
     var s = window.FW.state;
     return Object.assign({}, s, { p: Object.assign({}, s.p, { published: true }) });
   }
-  window.__portalServe = function () { return bundle(window.FW.gen(published())); };
-  window.__portalVisit = function (n) {
-    visits = Number(n);
+  var STATE_PATH = "/__state";
+  window.__portalServe = function (path) {
+    if (path === STATE_PATH) return JSON.stringify(published().p);
+    return bundle(window.FW.gen(published()));
+  };
+  window.__portalVisit = function (n, path) {
+    if (path === STATE_PATH) return;  // a follower polling, not a visit
+    visits += 1;
     $("ph-count").textContent = "돌려준 방문: " + visits;
   };
+
+  // --- Following: a read-only copy served by another tab keeps up with it in place. ---
+  function apply(next) {
+    var s = window.FW.state;
+    s.p = next;
+    window.FW.emit(s.events.ONLOAD);
+    s.prev = window.FW.hash.object(next);
+    s.pg = window.FW.getPage();
+    window.FW.emit(s.events.RENDER);
+  }
+  function follow() {
+    var source = location.origin + STATE_PATH, last = null, ok = false, misses = 0;
+    function tick() {
+      within(source, 8000)
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (text) {
+          var next = JSON.parse(text);
+          if (!next || !Array.isArray(next.pages)) throw new Error("not a wiki state");
+          ok = true; misses = 0;
+          if (text !== last && text !== JSON.stringify(window.FW.state.p)) apply(next);
+          last = text;
+          $("ph-follow").textContent = "원본을 따라가는 중 · " + new Date().toLocaleTimeString();
+          setTimeout(tick, 3000);
+        })
+        .catch(function () {
+          if (!ok) return;  // never reached a following-capable host: stay a plain snapshot
+          if (++misses >= 3) { $("ph-follow").textContent = "원본 연결이 끊겼습니다 — 마지막 상태를 유지합니다"; return; }
+          setTimeout(tick, 3000);
+        });
+    }
+    tick();
+  }
+  window.FW.ready(function () {
+    if (window.FW.state.p.published && /^https?:$/.test(location.protocol)) follow();
+  });
 
   function within(url, ms) {
     var c = new AbortController(), t = setTimeout(function () { c.abort(); }, ms);
