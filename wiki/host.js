@@ -2,9 +2,9 @@
 //
 // FeatherWiki (https://codeberg.org/Alamantus/FeatherWiki, AGPL-3.0) is a single-file wiki.
 // This script, appended to it, lets the tab serve its own current state over a Portal relay
-// (https://github.com/gosuda/portal-tunnel): a visitor to the public address gets the wiki as
-// it stands now and can edit, download, and host their own copy. The connector wasm is fetched
-// at runtime, so the file stays small.
+// (https://github.com/gosuda/portal-tunnel). Visitors get the wiki as it stands now in
+// FeatherWiki's own published (read-only) form, so editing stays with the owner; a read-only copy
+// can host again to pass it on. The connector wasm is fetched at runtime, so the file stays small.
 //
 // This combined work is AGPL-3.0. Source: https://github.com/naratteu/browser-host (wiki/).
 (function () {
@@ -48,7 +48,7 @@
     + '<div id=ph-panel hidden style="position:absolute;width:17rem;max-width:calc(100vw - 24px);background:#1a201e;color:#e4e9e7;'
     + 'border:1px solid #2c3532;border-radius:10px;padding:11px;box-shadow:0 6px 24px #0007">'
     + '<div style="font-weight:700;margin-bottom:5px">포탈로 공유</div>'
-    + '<div id=ph-stage style="color:#9aa29d;margin-bottom:8px">탭이 열려 있는 동안, 접속하는 사람에게 이 위키의 현재 상태를 돌려줍니다.</div>'
+    + '<div id=ph-stage style="color:#9aa29d;margin-bottom:8px"></div>'
     + '<button id=ph-go type=button style="font:600 13px ui-sans-serif,system-ui;color:#06211d;background:#3fc9b5;border:0;'
     + 'border-radius:7px;padding:6px 12px;cursor:pointer">호스팅 시작</button>'
     + '<div id=ph-url style="margin-top:8px;word-break:break-all"></div>'
@@ -95,10 +95,21 @@
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); panel.hidden = !panel.hidden; }
   });
   function stage(t) { $("ph-stage").textContent = t; }
+  window.FW.ready(function () {
+    stage(window.FW.state.p.published
+      ? "받은 읽기전용 위키를, 탭이 열려 있는 동안 다시 배포합니다."
+      : "탭이 열려 있는 동안, 접속하는 사람에게 이 위키의 현재 상태를 읽기전용으로 돌려줍니다. 편집은 이 탭에서만 합니다.");
+  });
 
   // --- Serving ---
   var visits = 0, publicURL = "";
-  window.__portalServe = function () { return bundle(window.FW.gen(window.FW.state)); };
+  // Visitors always get FeatherWiki's published (read-only) form, so copies do not fork; only the
+  // owner's tab, which holds the editable file, changes the wiki.
+  function published() {
+    var s = window.FW.state;
+    return Object.assign({}, s, { p: Object.assign({}, s.p, { published: true }) });
+  }
+  window.__portalServe = function () { return bundle(window.FW.gen(published())); };
   window.__portalVisit = function (n) {
     visits = Number(n);
     $("ph-count").textContent = "돌려준 방문: " + visits;
