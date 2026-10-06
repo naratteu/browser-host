@@ -190,7 +190,8 @@
     var go = new Go();
     var mod = await WebAssembly.instantiate(buf, go.importObject);
     go.run(mod.instance);
-    var name = (crypto.randomUUID && crypto.randomUUID()) || ("wiki-" + Math.random().toString(36).slice(2));
+    // Relays take names of at most 22 characters, since an identity-bound hostname is `<name>-<40 hex address>`.
+    var name = "wiki-" + Array.from(crypto.getRandomValues(new Uint8Array(12)), function (b) { return (b % 36).toString(36); }).join("");
     var relays = await candidates();
     for (var i = 0; i < relays.length; i++) {
       var relay = relays[i].replace(/\/+$/, "");

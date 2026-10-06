@@ -156,7 +156,8 @@ async function main() {
   const { instance } = await WebAssembly.instantiate(await wasmBytes(), go.importObject);
   go.run(instance);
 
-  const name = (crypto.randomUUID && crypto.randomUUID()) || ("tab-" + Math.random().toString(36).slice(2));
+  // Relays take names of at most 22 characters, since an identity-bound hostname is `<name>-<40 hex address>`.
+  const name = "tab-" + Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => (b % 36).toString(36)).join("");
   for (const raw of await candidates()) {
     const relay = raw.replace(/\/+$/, "");
     stage(`${relay} 확인 중…`);

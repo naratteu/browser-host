@@ -3,7 +3,7 @@
 **Live:** https://naratteu.github.io/browser-host/
 
 The [Portal](https://github.com/gosuda/portal-tunnel) connector SDK, compiled to WebAssembly. Open the
-page and the tab registers itself on a relay under a random GUID, which gives it a public HTTPS
+page and the tab registers itself on a relay under a random name, which gives it a public HTTPS
 address. Anyone who opens that address is answered by the tab:
 
 ```json

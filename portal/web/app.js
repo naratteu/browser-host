@@ -4,7 +4,8 @@ const LOCAL_RELAYS = ["https://localhost"];
 const READY_TIMEOUT_MS = 30000;
 
 const $ = (id) => document.getElementById(id);
-const name = crypto.randomUUID();
+// Relays take names of at most 22 characters, since an identity-bound hostname is `<name>-<40 hex address>`.
+const name = "tab-" + Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => (b % 36).toString(36)).join("");
 
 function log(text, kind = "") {
   const line = document.createElement("li");
